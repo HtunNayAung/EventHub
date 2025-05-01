@@ -1,12 +1,16 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
 import BrowseEvents from './pages/BrowseEvents';
 import EventDetail from './pages/EventDetail';
+import UserDashboard from './pages/AttendeeDashboard';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 import BecomeOrganizer from './pages/BecomeOrganizer';
-import "./App.css";
-import UserDashboard from './pages/UserDashboard';
+import OrganizerDashboard from './pages/OrganizerDashboard';
+import AttendeeDashboard from './pages/AttendeeDashboard';
+import './App.css';
+// import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -18,6 +22,12 @@ function App() {
           <Route path="/become-organizer" element={<BecomeOrganizer />} />
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/dashboard" element={<UserDashboard />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/signup/organizer" element={<Signup isOrganizer={true} />} />
+          <Route path="/organizer/:id/dashboard" element={<OrganizerDashboard />} />
+          <Route path="/attendee/:id/dashboard" element={<AttendeeDashboard />} />
+          {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
         </Routes>
         <Footer />
       </div>

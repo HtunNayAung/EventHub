@@ -1,13 +1,10 @@
 import { FaCalendar, FaMapMarkerAlt } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
 
-const EventCard = ({ event }) => {
-  const navigate = useNavigate();
-
+const EventCard = ({ event, onClick }) => {
   return (
     <div 
       className="relative overflow-hidden rounded-lg shadow-lg group cursor-pointer hover:-translate-y-1 transition-all duration-300"
-      onClick={() => navigate(`/events/${event.id}`)}
+      onClick={onClick}
     >
       <img 
         src={event.image} 
@@ -18,7 +15,7 @@ const EventCard = ({ event }) => {
       <div className="absolute bottom-0 left-0 right-0 p-6 text-[#F5EEDC]">
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-2xl font-bold">{event.title}</h3>
-          <span className="bg-[#F5EEDC] text-[#183B4E] text-sm px-3 py-1 rounded-full font-medium select-none cursor-pointer">
+          <span className="bg-[#F5EEDC] text-[#183B4E] text-sm px-3 py-1 rounded-full font-medium select-none">
             {event.category}
           </span>
         </div>
@@ -32,7 +29,7 @@ const EventCard = ({ event }) => {
           <span>{event.location}</span>
         </div>
         <div className="flex justify-between items-center pt-2 border-t border-[#F5EEDC]/20">
-          <span className="text-xl font-bold">${event.price.toFixed(2)}</span>
+          <span className="text-lg font-bold">From ${event.price.toFixed(2)}</span>
           <button className="bg-[#F5EEDC] text-[#183B4E] px-4 py-2 rounded-lg font-medium hover:bg-[#DDA853] transition-colors">
             View Details
           </button>

@@ -25,7 +25,11 @@ const Navbar = ({ inDashboard = false }) => {
             onClick={() => navigate('/')} 
             className="text-2xl font-bold text-[#F5EEDC] select-none cursor-pointer flex items-center"
           >
-            EventHub
+            <img 
+              src="/EventHub_logo_white.png" 
+              alt="EventHub Logo" 
+              className="h-10"
+            />
           </div>
           
           {inDashboard ? (
@@ -64,7 +68,7 @@ const Navbar = ({ inDashboard = false }) => {
                     Login
                   </Link>
                   <Link 
-                    to="/register" 
+                    to="/signup" 
                     className="bg-[#F5EEDC] text-[#183B4E] px-4 py-2 rounded-lg hover:bg-[#DDA853] transition-colors select-none cursor-pointer inline-block"
                   >
                     Sign Up

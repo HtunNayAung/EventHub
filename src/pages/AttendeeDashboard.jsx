@@ -4,7 +4,7 @@ import { mockEvents } from '../data/mockEvents';
 import Navbar from '../components/Navbar';
 import EventCard from '../components/EventCard';
 
-const UserDashboard = () => {
+const AttendeeDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeInboxTab, setActiveInboxTab] = useState('notifications');
   const [searchTerm, setSearchTerm] = useState('');
@@ -199,4 +199,4 @@ const UserDashboard = () => {
   );
 };
 
-export default UserDashboard;
+export default AttendeeDashboard;

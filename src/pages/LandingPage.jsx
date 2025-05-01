@@ -27,7 +27,7 @@ const LandingPage = () => {
               </button>
               <button 
                 className="border-2 border-[#F5EEDC] px-8 py-4 rounded-lg font-semibold hover:bg-[#F5EEDC] hover:text-[#183B4E] text-lg"
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/signup')}
               >
                 Get Started
               </button>
