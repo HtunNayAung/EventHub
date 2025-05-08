@@ -9,26 +9,26 @@ import {
 } from 'react-icons/fa';
 import { eventService } from '../services/api';
 
-const EventForm = ({ onCancel, onSuccess }) => {
+const EventForm = ({ onEventCreated, onCancel, initialData, isEditing }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [hasVipTickets, setHasVipTickets] = useState(false); // State for VIP toggle
+  const [hasVipTickets, setHasVipTickets] = useState(initialData?.vipTicketLimit > 0 || false);
 
-  // Event form state
+  // Event form state - initialize with initialData if provided
   const [eventForm, setEventForm] = useState({
-    title: '',
-    description: '',
-    shortDescription: '',
-    location: '',
-    date: '',
-    startTime: '',
-    endTime: '',
-    generalTicketPrice: '',
-    vipTicketPrice: '', // Keep in state, but conditionally required/used
-    generalTicketCapacity: '',
-    vipTicketCapacity: '', // Keep in state, but conditionally required/used
-    category: '',
-    imageUrl: ''
+    title: initialData?.title || '',
+    description: initialData?.description || '',
+    shortDescription: initialData?.shortDescription || '',
+    location: initialData?.location || '',
+    date: initialData?.eventDate?.split('T')[0] || '',
+    startTime: initialData?.startTime || '',
+    endTime: initialData?.endTime || '',
+    generalTicketPrice: initialData?.generalPrice?.toString() || '',
+    vipTicketPrice: initialData?.vipPrice?.toString() || '', 
+    generalTicketCapacity: initialData?.generalTicketLimit?.toString() || '',
+    vipTicketCapacity: initialData?.vipTicketLimit?.toString() || '', 
+    category: initialData?.eventType || '',
+    imageUrl: initialData?.imageUrl || ''
   });
 
   // Get today's date in YYYY-MM-DD format for the min attribute
@@ -118,7 +118,6 @@ const EventForm = ({ onCancel, onSuccess }) => {
     }
 
     setIsLoading(true);
-    // setError(''); // Error is cleared in validateForm or handleEventFormChange
 
     try {
       // Format the data for the API
@@ -127,45 +126,46 @@ const EventForm = ({ onCancel, onSuccess }) => {
         description: eventForm.description,
         shortDescription: eventForm.shortDescription,
         location: eventForm.location,
-        // Ensure date includes time part if backend expects LocalDateTime/Timestamp
-        // Assuming T00:00:00 is acceptable if only date matters for filtering
         eventDate: `${eventForm.date}T00:00:00`,
         startTime: eventForm.startTime,
         endTime: eventForm.endTime,
         eventType: eventForm.category,
         status: 'PUBLISHED', // Default status
         generalPrice: parseFloat(eventForm.generalTicketPrice),
-        // Set VIP price to 0 if not offered, otherwise parse it
         vipPrice: hasVipTickets ? parseFloat(eventForm.vipTicketPrice) : 0,
         generalTicketLimit: parseInt(eventForm.generalTicketCapacity),
-        // Set VIP capacity to 0 if not offered, otherwise parse it
         vipTicketLimit: hasVipTickets ? parseInt(eventForm.vipTicketCapacity) : 0,
         imageUrl: eventForm.imageUrl || "https://www.creativefabrica.com/wp-content/uploads/2022/01/01/event-organizer-letter-eo-logo-design-Graphics-22712239-1.jpg",
-        organizerId: localStorage.getItem('userId') // Ensure userId is stored correctly
+        organizerId: localStorage.getItem('userId')
       };
 
       console.log('Sending event data:', eventData);
 
-      // Call the API
-      const response = await eventService.createEvent(eventData);
-      console.log('Event created successfully:', response.data);
+      // Call the API - handle both create and update
+      let response;
+      if (isEditing && initialData?.id) {
+        response = await eventService.updateEvent(initialData.id, eventData);
+        console.log('Event updated successfully:', response.data);
+      } else {
+        response = await eventService.createEvent(eventData);
+        console.log('Event created successfully:', response.data);
+      }
 
-      // Reset form completely on success
+      // Reset form on success
       setEventForm({
         title: '', description: '', shortDescription: '', location: '',
         date: '', startTime: '', endTime: '', generalTicketPrice: '',
         vipTicketPrice: '', generalTicketCapacity: '', vipTicketCapacity: '',
         category: '', imageUrl: ''
       });
-      setHasVipTickets(false); // Reset VIP toggle
+      setHasVipTickets(false);
 
       // Notify parent component of success
-      if (onSuccess) onSuccess(response.data);
+      if (onEventCreated) onEventCreated(response.data);
 
     } catch (err) {
-      console.error('Error creating event:', err);
-      // Display backend error or a generic message
-      setError(err.response?.data?.message || err.message || 'Failed to create event. Please check your input and try again.');
+      console.error('Error saving event:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to save event. Please check your input and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -368,7 +368,7 @@ const EventForm = ({ onCancel, onSuccess }) => {
                         name="vipTicketPrice"
                         required={hasVipTickets}
                         min="0.1"
-                        step="0.5"
+                        step="0.1"
                         className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]" 
                         placeholder="Price per ticket"
                         value={eventForm.vipTicketPrice}
@@ -466,7 +466,7 @@ const EventForm = ({ onCancel, onSuccess }) => {
             disabled={isLoading}
             className="flex-1 bg-[#27548A] text-[#F5EEDC] py-3 rounded-lg font-medium hover:bg-[#183B4E] transition-colors disabled:opacity-70"
           >
-            {isLoading ? 'Creating...' : 'Create Event'}
+            {isLoading ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Event' : 'Create Event')}
           </button>
         </div>
       </form>

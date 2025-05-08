@@ -16,21 +16,25 @@ import EventCard from '../components/EventCard';
 import { eventService } from '../services/api';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import Settings from '../components/Settings';
 
 const OrganizerDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('events');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [showEventDetails, setShowEventDetails] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const [events, setEvents] = useState([]);
+  
+  // Add this new state for editing mode
+  const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false); 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelPassword, setCancelPassword] = useState('');
   const [cancelError, setCancelError] = useState('');
-  // Detail view state
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [showEventDetails, setShowEventDetails] = useState(false);
+
 
   // Sub-tabs for "My Events"
   const [eventsSubTab, setEventsSubTab] = useState('upcoming'); // 'upcoming', 'inprogress', 'completed', 'cancelled'
@@ -111,6 +115,26 @@ const OrganizerDashboard = () => {
   const handleEventCreated = newEvent => {
     setEvents(prev => [newEvent, ...prev]);
     setShowCreateEvent(false);
+  };
+
+
+  const handleEditEvent = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setShowEventDetails(true); // Show details view again when canceling edit
+  };
+
+  const handleEventUpdated = (updatedEvent) => {
+    setEvents(prevEvents =>
+      prevEvents.map(event =>
+        event.id === updatedEvent.id ? updatedEvent : event
+      )
+    );
+    setIsEditing(false);
+    setSelectedEvent(updatedEvent);
   };
 
   const handleEventClick = event => {
@@ -234,14 +258,16 @@ const OrganizerDashboard = () => {
             {!showCreateEvent && !showEventDetails ? (
               <>
                 <h1 className="text-2xl md:text-3xl font-bold text-[#183B4E]">
-                  My Events
+                  {activeTab === 'settings' ? 'Settings' : 'My Events'}
                 </h1>
-                <button
-                  onClick={() => setShowCreateEvent(true)}
-                  className="flex items-center px-4 py-2 bg-[#27548A] text-white rounded-lg hover:bg-[#183B4E] transition-colors"
-                ><FaPlus className="mr-2"/> Create Event</button>
+                {activeTab === 'events' && (
+                  <button
+                    onClick={() => setShowCreateEvent(true)}
+                    className="flex items-center px-4 py-2 bg-[#27548A] text-white rounded-lg hover:bg-[#183B4E] transition-colors"
+                  ><FaPlus className="mr-2"/> Create Event</button>
+                )}
               </>
-            ) : showEventDetails ? (
+            ) : showEventDetails && !isEditing ? (
               <div className="flex items-center">
                 <button
                   onClick={handleBackToEvents}
@@ -254,11 +280,11 @@ const OrganizerDashboard = () => {
             ) : (
               <div className="flex items-center">
                 <button
-                  onClick={() => setShowCreateEvent(false)}
+                  onClick={isEditing ? handleCancelEdit : () => setShowCreateEvent(false)}
                   className="mr-4 p-2 rounded-full hover:bg-gray-200"
                 ><FaArrowLeft className="text-[#183B4E]"/></button>
                 <h1 className="text-2xl md:text-3xl font-bold text-[#183B4E]">
-                  Create New Event
+                  {isEditing ? 'Edit Event' : 'Create New Event'}
                 </h1>
               </div>
             )}
@@ -266,8 +292,35 @@ const OrganizerDashboard = () => {
 
           <div className="bg-white rounded-xl shadow-sm p-6">
 
+            {/* Create Event Form */}
+            {activeTab === 'events' && showCreateEvent && (
+              <EventForm 
+                onEventCreated={handleEventCreated} 
+                onCancel={() => setShowCreateEvent(false)} 
+              />
+            )}
+
+            {/* Edit Event Form */}
+            {activeTab === 'events' && isEditing && selectedEvent && (
+              <EventForm 
+                initialData={selectedEvent}
+                isEditing={true}
+                onEventCreated={(updatedEvent) => {
+                  setEvents(prev => 
+                    prev.map(e => e.id === updatedEvent.id ? updatedEvent : e)
+                  );
+                  setIsEditing(false);
+                  setShowEventDetails(false);
+                }}
+                onCancel={handleCancelEdit}
+              />
+            )}
+
+            {/* Settings View */}
+            {activeTab === 'settings' && <Settings />}
+
             {/* Details view */}
-            {activeTab==='events' && showEventDetails && selectedEvent && (
+            {activeTab === 'events' && showEventDetails && selectedEvent && !isEditing && (
               <div>
                 <div className="relative h-[300px] mb-6 rounded-lg overflow-hidden">
                   <img
@@ -397,6 +450,7 @@ const OrganizerDashboard = () => {
                           <div className="flex space-x-3">
                             {isEditableOrCancellable && (
                               <button
+                                onClick={handleEditEvent}
                                 className="flex-1 bg-[#27548A] text-[#F5EEDC] py-2 rounded-lg font-medium hover:bg-[#183B4E] transition-colors"
                               >
                                 Edit Event
@@ -562,3 +616,5 @@ const EventGrid = ({ events, onClick }) => (
     <p className="text-gray-500">No {events.length === 0 && 'events'} found.</p>
   )
 );
+
+

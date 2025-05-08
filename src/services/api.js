@@ -58,4 +58,13 @@ export const registrationService = {
   },
 };
 
+export const userService = {
+  updateProfile: (userId, profileData) => {
+    return api.put(`/users/${userId}/profile`, profileData);
+  },
+  updatePassword: (userId, passwordData) => {
+    return api.put(`/users/${userId}/password`, passwordData);
+  }
+};
+
 export default api;

@@ -5,14 +5,34 @@ import {
   FaCog, 
   FaSignOutAlt 
 } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
 
 const OrganizerMenu = ({ 
   activeTab, 
   setActiveTab, 
   setShowCreateEvent, 
-  user, 
+  user: initialUser, 
   handleLogout 
 }) => {
+  const [user, setUser] = useState(initialUser);
+
+  useEffect(() => {
+    // Update user data when profile is updated
+    const handleProfileUpdate = () => {
+      setUser({
+        name: localStorage.getItem('userName') || 'Organizer Name',
+        email: localStorage.getItem('userEmail') || 'organizer@example.com'
+      });
+    };
+
+    // Listen for profile updates
+    window.addEventListener('userProfileUpdate', handleProfileUpdate);
+
+    // Cleanup listener on unmount
+    return () => {
+      window.removeEventListener('userProfileUpdate', handleProfileUpdate);
+    };
+  }, []);
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-1">EventHub</h2>
