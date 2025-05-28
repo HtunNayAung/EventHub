@@ -42,6 +42,9 @@ export const eventService = {
   cancelEvent: (eventId, password) => {
     return api.put(`/events/${eventId}/cancel`, { password } );
   },
+  getAttendees: (eventId) => {
+    return api.get(`/registrations/events/${eventId}`);
+  },
 
 };
 
@@ -52,6 +55,18 @@ export const registrationService = {
   },
   getAllTicketsForAttendee: (attendeeId) => {
     return api.get(`/registrations/user/${attendeeId}/tickets`);
+  },
+  approveRegistration: (registrationId) => {
+    return api.put(`/registrations/${registrationId}/approve`);
+  },
+  rejectRegistration: (registrationId) => {
+    return api.put(`/registrations/${registrationId}/reject`);
+  },
+  refundRegistration: (registrationId) => {
+    return api.put(`/registrations/${registrationId}/refund`);
+  },
+  getMyRegistrations: (attendeeId) => {
+    return api.get(`/registrations/users/${attendeeId}`);
   },
 };
 
@@ -66,7 +81,7 @@ export const userService = {
 
 export const paymentService = {
   makePayment: (paymentData) => {
-    return api.post('/payments', paymentData);
+    return api.post('/payments/make', paymentData);
   },
 };
 

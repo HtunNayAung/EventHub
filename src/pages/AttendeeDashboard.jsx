@@ -14,11 +14,12 @@ import EventCard from '../components/EventCard';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import Settings from '../components/Settings';
+import MyRegistrationsPage from './MyRegistrationsPage';
 
 const AttendeeDashboard = () => {
   const navigate = useNavigate();
   const selectedEventRef = useRef(null);
-  const [activeTab, setActiveTab] = useState('tickets');
+  const [activeTab, setActiveTab] = useState('registrations');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -137,8 +138,6 @@ const AttendeeDashboard = () => {
       return Array.from(map.values());
     });
   
-    // 🔁 Sync selected event if it's visible and was updated
-    console.log("🔁 Syncing selected event:", selectedEvent);
     const currentSelected = selectedEventRef.current;
     if (currentSelected) {
       const found = updated.find(e => e.id === currentSelected.id);
@@ -239,7 +238,7 @@ const AttendeeDashboard = () => {
               <h1 className="text-2xl md:text-3xl font-bold text-[#183B4E]">
                 {activeTab === 'settings' ? 'Settings' : 
                  activeTab === 'notifications' ? 'Notifications' :
-                 activeTab === 'tickets' ? 'My Tickets' : 
+                 activeTab === 'registrations' ? 'My Registrations' : 
                  activeTab === 'browse'? 'Browse Events' :'My Events'
                  }
               </h1>
@@ -341,8 +340,8 @@ const AttendeeDashboard = () => {
             )}
 
             {/* Tickets View */}
-            {activeTab === 'tickets' && (
-              <MyTicketsAccordion userId={user.id}/>
+            {activeTab === 'registrations' && (
+              <MyRegistrationsPage/>
             )}
           </div>
         </div>
@@ -354,8 +353,8 @@ const AttendeeDashboard = () => {
 export default AttendeeDashboard;
 
 import RegistrationForm from '../components/RegistrationForm';
-import MyTicketsAccordion from '../components/dashboard/attendee/MyTicketsAccordion';
 const EventDetailsView = ({ event, isBrowseMode = false, userId}) => {
+  console.log("EventDetailsView: event =", event);
   const [showRegistration, setShowRegistration] = useState(false);
   if (showRegistration) {
     return <RegistrationForm event={event} onBack={() => setShowRegistration(false)} userId={userId}/>;
@@ -447,8 +446,8 @@ const EventDetailsView = ({ event, isBrowseMode = false, userId}) => {
                 <h4 className="font-bold text-[#183B4E]">General Admission</h4>
                 {isBrowseMode ? (
                   <p className="text-sm text-[#183B4E]/70">
-                    {event.generalTicketLimit
-                      ? `${event.generalTicketLimit} tickets available`
+                    {event.generalTicketsRemaining
+                      ? `${event.generalTicketsRemaining} tickets available`
                       : 'Limited availability'}
                   </p>
                 ) : (
@@ -470,8 +469,8 @@ const EventDetailsView = ({ event, isBrowseMode = false, userId}) => {
                 <div>
                   <h4 className="font-bold text-[#183B4E]">VIP Access</h4>
                   <p className="text-sm text-[#183B4E]/70">
-                    {event.vipTicketLimit
-                      ? `${event.vipTicketLimit} tickets available`
+                    {event.vipTicketsRemaining
+                      ? `${event.vipTicketsRemaining  } tickets available`
                       : 'Limited availability'}
                   </p>
                 </div>

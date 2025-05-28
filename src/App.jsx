@@ -11,7 +11,7 @@ import OrganizerDashboard from './pages/OrganizerDashboard';
 import AttendeeDashboard from './pages/AttendeeDashboard';
 import './App.css';
 import PaymentPage from './pages/PaymentPage';
-// import AdminDashboard from './pages/AdminDashboard';
+import AttendeeListPage from './pages/AttendeeListPage';
 
 function App() {
   return (
@@ -29,7 +29,7 @@ function App() {
           <Route path="/organizer/:id/dashboard" element={<OrganizerDashboard />} />
           <Route path="/attendee/:id/dashboard" element={<AttendeeDashboard />} />
           <Route path="/payment/:registrationId" element={<PaymentPage />} />
-          {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
+          <Route path="/events/:eventId/attendees" element={<AttendeeListPage />} />
         </Routes>
         <Footer />
       </div>

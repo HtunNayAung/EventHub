@@ -26,16 +26,13 @@ const OrganizerDashboard = () => {
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [events, setEvents] = useState([]);
-  
-  // Add this new state for editing mode
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false); 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelPassword, setCancelPassword] = useState('');
   const [cancelError, setCancelError] = useState('');
-
-
+  const [showAttendees, setShowAttendees] = useState(false);
   // Sub-tabs for "My Events"
   const [eventsSubTab, setEventsSubTab] = useState('upcoming'); // 'upcoming', 'inprogress', 'completed', 'cancelled'
 
@@ -212,7 +209,6 @@ const OrganizerDashboard = () => {
     return start >= now && e.status !== 'CANCELLED';
   });
   const inProgressEvents  = events.filter(e => e.status === 'IN_PROGRESS');
-  console.log(inProgressEvents.length);
   const completedEvents   = events.filter(e => e.status === 'COMPLETED');
   const cancelledEvents   = events.filter(e => e.status === 'CANCELLED');
 
@@ -307,13 +303,6 @@ const OrganizerDashboard = () => {
               <EventForm 
                 initialData={selectedEvent}
                 isEditing={true}
-                // onEventCreated={(updatedEvent) => {
-                //   setEvents(prev => 
-                //     prev.map(e => e.id === updatedEvent.id ? updatedEvent : e)
-                //   );
-                //   setIsEditing(false);
-                //   setShowEventDetails(false);
-                // }}
                 onEventCreated={handleEventUpdated}
                 onCancel={handleCancelEdit}
               />
@@ -408,8 +397,8 @@ const OrganizerDashboard = () => {
                           <div>
                             <h4 className="font-bold text-[#183B4E]">General Admission</h4>
                             <p className="text-sm text-[#183B4E]/70">
-                              {selectedEvent.generalTicketLimit
-                                ? `${selectedEvent.generalTicketLimit} tickets available`
+                              {selectedEvent.generalTicketsRemaining
+                                ? `${selectedEvent.generalTicketsRemaining} tickets available`
                                 : 'Limited availability'}
                             </p>
                           </div>
@@ -425,8 +414,8 @@ const OrganizerDashboard = () => {
                             <div>
                               <h4 className="font-bold text-[#183B4E]">VIP Access</h4>
                               <p className="text-sm text-[#183B4E]/70">
-                                {selectedEvent.vipTicketLimit
-                                  ? `${selectedEvent.vipTicketLimit} tickets available`
+                                {selectedEvent.vipTicketsRemaining
+                                  ? `${selectedEvent.vipTicketsRemaining} tickets available`
                                   : 'Limited availability'}
                               </p>
                             </div>
@@ -460,6 +449,7 @@ const OrganizerDashboard = () => {
                               </button>
                             )}
                             <button
+                              onClick={() => navigate(`/events/${selectedEvent.id}/attendees`)}
                               className="flex-1 border border-[#27548A] text-[#27548A] py-2 rounded-lg font-medium hover:bg-[#27548A]/10 transition-colors"
                             >
                               View Attendees

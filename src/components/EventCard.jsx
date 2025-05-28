@@ -29,7 +29,9 @@ const EventCard = ({ event, onClick }) => {
           <span>{event.location}</span>
         </div>
         <div className="flex justify-between items-center pt-2 border-t border-[#F5EEDC]/20">
-          <span className="text-lg font-bold">From ${event.price.toFixed(2)}</span>
+        <span className="text-lg font-bold">
+  {event.price.toFixed(2) === "0.00" ? "Free" : `From $${event.price.toFixed(2)}`}
+</span>
           <button className="bg-[#F5EEDC] text-[#183B4E] px-4 py-2 rounded-lg font-medium hover:bg-[#DDA853] transition-colors">
             View Details
           </button>

@@ -58,14 +58,7 @@ const OrganizerMenu = ({
           <FaCalendarAlt className="mr-3" />
           <span>My Events</span>
         </button>
-        
-        <button 
-          onClick={() => {setActiveTab('attendees'); setShowCreateEvent(false);}}
-          className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${activeTab === 'attendees' ? 'bg-[#DDA853] text-[#183B4E]' : 'hover:bg-white/10'}`}
-        >
-          <FaUsers className="mr-3" />
-          <span>Attendees</span>
-        </button>
+
         
         <button 
           onClick={() => {setActiveTab('analytics'); setShowCreateEvent(false);}}

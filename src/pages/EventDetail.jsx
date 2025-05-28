@@ -188,7 +188,7 @@ const EventDetail = () => {
                       <div>
                         <h4 className="font-bold text-[#183B4E]">General Admission</h4>
                         <p className="text-sm text-[#183B4E]/70">
-                          {event.generalTicketLimit ? `${event.generalTicketLimit} tickets available` : 'Limited availability'}
+                          {event.generalTicketsRemaining ? `${event.generalTicketsRemaining} tickets available` : 'Limited availability'}
                         </p>
                       </div>
                       <div className="text-xl font-bold text-[#183B4E]">
@@ -203,7 +203,7 @@ const EventDetail = () => {
                         <div>
                           <h4 className="font-bold text-[#183B4E]">VIP Access</h4>
                           <p className="text-sm text-[#183B4E]/70">
-                            {event.vipTicketLimit ? `${event.vipTicketLimit} tickets available` : 'Limited availability'}
+                            {event.vipTicketsRemaining ? `${event.vipTicketsRemaining} tickets available` : 'Limited availability'}
                           </p>
                         </div>
                         <div className="text-xl font-bold text-[#183B4E]">

@@ -81,7 +81,7 @@ const EventForm = ({ onEventCreated, onCancel, initialData, isEditing }) => {
     // General Ticket Price/Capacity Validation
     const generalPrice = parseFloat(eventForm.generalTicketPrice);
     const generalCapacity = parseInt(eventForm.generalTicketCapacity);
-    if (isNaN(generalPrice) || generalPrice <= 0) {
+    if (isNaN(generalPrice) || generalPrice < 0) {
         setError('General ticket price must be greater than zero.');
         return false;
     }
@@ -314,7 +314,7 @@ const EventForm = ({ onEventCreated, onCancel, initialData, isEditing }) => {
                 type="number"
                 name="generalTicketPrice"
                 required
-                min="0.1"
+                min="0.0"
                 step="0.1"
                 className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]" 
                 placeholder="Price per ticket"

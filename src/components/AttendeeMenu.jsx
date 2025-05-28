@@ -61,11 +61,11 @@ const AttendeeMenu = ({
         </button>
 
         <button 
-          onClick={() => setActiveTab('tickets')}
-          className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${activeTab === 'tickets' ? 'bg-[#DDA853] text-[#183B4E]' : 'hover:bg-white/10'}`}
+          onClick={() => setActiveTab('registrations')}
+          className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${activeTab === 'registrations' ? 'bg-[#DDA853] text-[#183B4E]' : 'hover:bg-white/10'}`}
         >
           <FaTicketAlt className="mr-3" />
-          <span>My Tickets</span>
+          <span>My Registrations</span>
         </button>
         
         <button 
