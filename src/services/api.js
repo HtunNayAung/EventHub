@@ -50,11 +50,8 @@ export const registrationService = {
   registerForEvent: (registrationData) => {
     return api.post('/registrations', registrationData);
   },
-  getUserRegistrations: (userId) => {
-    return api.get(`/registrations/attendee/${userId}`);
-  },
-  getEventRegistrations: (eventId) => {
-    return api.get(`/registrations/event/${eventId}`);
+  getAllTicketsForAttendee: (attendeeId) => {
+    return api.get(`/registrations/user/${attendeeId}/tickets`);
   },
 };
 
@@ -65,6 +62,12 @@ export const userService = {
   updatePassword: (userId, passwordData) => {
     return api.put(`/users/${userId}/password`, passwordData);
   }
+};
+
+export const paymentService = {
+  makePayment: (paymentData) => {
+    return api.post('/payments', paymentData);
+  },
 };
 
 export default api;

@@ -1,202 +1,500 @@
-import { useState } from 'react';
-import { FaTicketAlt, FaCalendar, FaUser, FaChartLine, FaInbox, FaBell, FaEnvelope, FaSearch } from 'react-icons/fa';
-import { mockEvents } from '../data/mockEvents';
-import Navbar from '../components/Navbar';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  FaBars,
+  FaTimes,
+  FaArrowLeft,
+  FaClock,
+  FaMapMarkerAlt,
+  FaInfoCircle,
+  FaCalendarAlt
+} from 'react-icons/fa';
+import AttendeeMenu from '../components/AttendeeMenu';
 import EventCard from '../components/EventCard';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import Settings from '../components/Settings';
 
 const AttendeeDashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeInboxTab, setActiveInboxTab] = useState('notifications');
+  const navigate = useNavigate();
+  const selectedEventRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('tickets');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showEventDetails, setShowEventDetails] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Add these new state variables
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [allEvents, setAllEvents] = useState([]);
+  const [sortBy, setSortBy] = useState('date-asc'); // Add this state
 
-  // Use first 3 mockEvents for demonstration
-  const userEvents = mockEvents.slice(0, 3);
-  
-  // Mock notifications and messages
-  const mockNotifications = [
-    { id: 1, type: 'event', title: 'Event Reminder', message: 'Tech Conference 2024 is tomorrow!', date: '2024-06-14', read: false },
-    { id: 2, type: 'ticket', title: 'Ticket Confirmed', message: 'Your ticket for Music Festival has been confirmed', date: '2024-06-10', read: true },
-    { id: 3, type: 'system', title: 'Welcome to EventHub', message: 'Thank you for joining our platform', date: '2024-06-01', read: true }
-  ];
-  
-  const mockMessages = [
-    { id: 1, sender: 'Tech Conference Team', subject: 'Important Information', message: 'Here are the details for your upcoming event participation', date: '2024-06-12', read: false },
-    { id: 2, sender: 'EventHub Support', subject: 'Your Recent Inquiry', message: 'Thank you for contacting us. We have processed your request.', date: '2024-06-08', read: true }
-  ];
+  // Add this new effect for fetching all events
+  useEffect(() => {
+    if (activeTab === 'browse') {
+      fetchAllEvents();
+    }
+  }, [activeTab]);
 
-  // Filter events for browse tab
-  const filteredEvents = mockEvents.filter(event => {
-    const matchesSearch = searchTerm === '' || 
-      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  const fetchAllEvents = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:8080/api/events');
+      const data = await response.json();
+      setAllEvents(data || []);
+    } catch (err) {
+      console.error('Error fetching all events:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add this computed value for filtered events
+  // Modify the filtered events computation to include sorting
+  const filteredEvents = allEvents.filter(event => {
+    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         event.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || event.eventType === selectedCategory;
+    const matchesStatus = event.status === 'PUBLISHED' || event.status === 'IN_PROGRESS';
+    return matchesSearch && matchesCategory && matchesStatus;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'date-asc':
+        return new Date(`${a.eventDate}T${a.startTime}`) - new Date(`${b.eventDate}T${b.startTime}`);
+      case 'date-desc':
+        return new Date(`${b.eventDate}T${b.startTime}`) - new Date(`${a.eventDate}T${a.startTime}`);
+      case 'price-asc':
+        return (a.generalPrice || 0) - (b.generalPrice || 0);
+      case 'price-desc':
+        return (b.generalPrice || 0) - (a.generalPrice || 0);
+      default:
+        return 0;
+    }
   });
+
+  const user = {
+    id: localStorage.getItem('userId') || 'undefined',
+    name: localStorage.getItem('userName') || 'Attendee Name',
+    email: localStorage.getItem('userEmail') || 'attendee@example.com'
+  };
+  // useEffect(() => {
+  //   // only wire up WebSocket when showing the events list
+  //   if (activeTab === 'events' && !showEventDetails) {
+  //     // initial load
+  //     fetchEvents();
   
+  //     // create & configure STOMP over SockJS
+  //     const client = new Client({
+  //       webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+  //       reconnectDelay: 5000,
+  //       debug: msg => console.debug('[STOMP]', msg)
+  //     });
+  
+  //     client.onConnect = () => {
+  //       // New or updated PUBLISHED events
+  //       client.subscribe('/topic/events/published', msg => {
+  //         const updated = JSON.parse(msg.body);
+  //         setAllEvents(prev => {
+  //           const map = new Map(prev.map(e => [e.id, e]));
+  //           updated.forEach(e => map.set(e.id, e)); // update or add
+  //           return Array.from(map.values());
+  //         });
+  //       });
+      
+  //       // Status changed to IN_PROGRESS
+  //       client.subscribe('/topic/events/inprogress', msg => {
+  //         const updated = JSON.parse(msg.body);
+  //         setAllEvents(prev =>
+  //           prev.map(e => {
+  //             const u = updated.find(x => x.id === e.id);
+  //             return u ? { ...e, status: u.status } : e;
+  //           })
+  //         );
+  //       });
+  //     };
+      
+  
+  //     // activate the connection
+  //     client.activate();
+  
+  //     // cleanup on unmount or when tabs change
+  //     return () => {
+  //       client.deactivate();
+  //     };
+  //   }
+  // }, [activeTab, showEventDetails]);
+
+  useEffect(() => {
+    selectedEventRef.current = selectedEvent;
+  }, [selectedEvent]);
+  
+  const handleSocketUpdate = (updated) => {
+    setAllEvents(prev => {
+      const map = new Map(prev.map(e => [e.id, e]));
+      updated.forEach(e => map.set(e.id, e));
+      return Array.from(map.values());
+    });
+  
+    // 🔁 Sync selected event if it's visible and was updated
+    console.log("🔁 Syncing selected event:", selectedEvent);
+    const currentSelected = selectedEventRef.current;
+    if (currentSelected) {
+      const found = updated.find(e => e.id === currentSelected.id);
+      if (found) {
+        setSelectedEvent(found);
+      }
+    }
+  };
+  useEffect(() => {
+    // create & configure STOMP over SockJS
+    const client = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+      reconnectDelay: 5000,
+      debug: msg => console.debug('[STOMP]', msg)
+    });
+  
+    client.onConnect = () => {
+      // PUBLISHED updates
+      client.subscribe('/topic/events/published', msg => {
+        const updated = JSON.parse(msg.body);
+        // setAllEvents(prev => {
+        //   const map = new Map(prev.map(e => [e.id, e]));
+        //   updated.forEach(e => map.set(e.id, e));
+        //   return Array.from(map.values());
+        // });
+        handleSocketUpdate(updated);
+      });
+  
+      // IN_PROGRESS updates
+      client.subscribe('/topic/events/inprogress', msg => {
+        const updated = JSON.parse(msg.body);
+        // setAllEvents(prev => {
+        //   const map = new Map(prev.map(e => [e.id, e]));
+        //   updated.forEach(e => map.set(e.id, e)); // replace full event object
+        //   return Array.from(map.values());
+        // });
+        handleSocketUpdate(updated);
+      });
+      
+    };
+  
+    client.activate();
+  
+    return () => {
+      client.deactivate();
+    };
+  }, []); 
+  
+  const handleLogout = () => {
+    ['isLoggedIn','userRole','userId','userEmail','userName']
+      .forEach(key => localStorage.removeItem(key));
+    navigate('/');
+  };
+
+  const handleEventClick = event => {
+    setSelectedEvent(event);
+    setShowEventDetails(true);
+  };
+
+  const handleBackToEvents = () => {
+    setShowEventDetails(false);
+    setSelectedEvent(null);
+  };
+
   return (
-    <>
-      <Navbar inDashboard={true}/>
-    
-      <div className="bg-[#F5EEDC] min-h-screen py-12">
-        
-        <div className="container mx-auto px-6">
+    <div className="flex h-screen bg-[#F5EEDC]">
+      {/* Sidebar toggle for mobile */}
+      <div className="lg:hidden fixed top-4 left-4 z-20">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 rounded-md bg-[#27548A] text-white"
+        >
+          {sidebarOpen ? <FaTimes/> : <FaBars/>}
+        </button>
+      </div>
 
-          <div className="flex">
-            {/* Sidebar Navigation */}
-            <div className="w-64 bg-white rounded-lg shadow-lg overflow-hidden mr-6 h-fit">
-              <div className="p-4 bg-[#27548A] text-[#F5EEDC]">
-                <h2 className="font-bold text-xl">John Doe</h2>
-                <p className="text-sm opacity-80">john.doe@example.com</p>
-              </div>
-              <div className="flex flex-col">
-                <button
-                  className={`flex items-center px-6 py-4 text-left ${
-                    activeTab === 'overview' ? 'bg-[#F5EEDC] text-[#27548A] font-medium' : 'text-gray-600'
-                  }`}
-                  onClick={() => setActiveTab('overview')}
-                >
-                  <FaChartLine className="mr-3" />
-                  Overview
-                </button>
-                <button
-                  className={`flex items-center px-6 py-4 text-left ${
-                    activeTab === 'browse' ? 'bg-[#F5EEDC] text-[#27548A] font-medium' : 'text-gray-600'
-                  }`}
-                  onClick={() => setActiveTab('browse')}
-                >
-                  <FaSearch className="mr-3" />
-                  Browse Events
-                </button>
-                <button
-                  className={`flex items-center px-6 py-4 text-left ${
-                    activeTab === 'tickets' ? 'bg-[#F5EEDC] text-[#27548A] font-medium' : 'text-gray-600'
-                  }`}
-                  onClick={() => setActiveTab('tickets')}
-                >
-                  <FaTicketAlt className="mr-3" />
-                  My Tickets
-                </button>
-                <button
-                  className={`flex items-center px-6 py-4 text-left ${
-                    activeTab === 'events' ? 'bg-[#F5EEDC] text-[#27548A] font-medium' : 'text-gray-600'
-                  }`}
-                  onClick={() => setActiveTab('events')}
-                >
-                  <FaCalendar className="mr-3" />
-                  Registered Events
-                </button>
-                <button
-                  className={`flex items-center px-6 py-4 text-left ${
-                    activeTab === 'inbox' ? 'bg-[#F5EEDC] text-[#27548A] font-medium' : 'text-gray-600'
-                  }`}
-                  onClick={() => setActiveTab('inbox')}
-                >
-                  <FaInbox className="mr-3" />
-                  Inbox
-                  <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    2
-                  </span>
-                </button>
-                <button
-                  className={`flex items-center px-6 py-4 text-left ${
-                    activeTab === 'profile' ? 'bg-[#F5EEDC] text-[#27548A] font-medium' : 'text-gray-600'
-                  }`}
-                  onClick={() => setActiveTab('profile')}
-                >
-                  <FaUser className="mr-3" />
-                  Profile
-                </button>
-              </div>
-            </div>
+      {/* Sidebar */}
+      <div className={`
+        fixed lg:static inset-y-0 left-0 transform
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0 transition duration-200 ease-in-out
+        z-10 w-64 bg-gradient-to-b from-[#27548A] to-[#183B4E] text-white
+      `}>
+        <AttendeeMenu
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          user={user}
+          handleLogout={handleLogout}
+        />
+      </div>
 
-            {/* Content Area */}
-            <div className="flex-1 bg-white rounded-lg shadow-lg overflow-hidden">
-              {/* Existing tabs content */}
-              
-              {/* New Browse Events Tab */}
-              {activeTab === 'browse' && (
-                <div className="p-6">
-                  <h2 className="text-2xl font-bold text-[#183B4E] mb-6">Browse Events</h2>
-                  
-                  {/* Search and Filter */}
-                  <div className="mb-8">
-                    <div className="flex flex-col md:flex-row gap-4">
-                      <div className="md:w-2/3 relative">
-                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#27548A]" />
+      {/* Main content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-6 md:p-10">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            {!showEventDetails ? (
+              <h1 className="text-2xl md:text-3xl font-bold text-[#183B4E]">
+                {activeTab === 'settings' ? 'Settings' : 
+                 activeTab === 'notifications' ? 'Notifications' :
+                 activeTab === 'tickets' ? 'My Tickets' : 
+                 activeTab === 'browse'? 'Browse Events' :'My Events'
+                 }
+              </h1>
+            ) : (
+              <div className="flex items-center">
+                <button
+                  onClick={handleBackToEvents}
+                  className="mr-4 p-2 rounded-full hover:bg-gray-200"
+                >
+                  <FaArrowLeft className="text-[#183B4E]"/>
+                </button>
+                <h1 className="text-2xl md:text-3xl font-bold text-[#183B4E]">
+                  Event Details
+                </h1>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            {/* Browse Events View */}
+            {activeTab === 'browse' && (
+              <>
+                {!showEventDetails ? (
+                  <>
+                    <div className="mb-6">
+                      <div className="flex flex-col md:flex-row gap-4">
                         <input
                           type="text"
                           placeholder="Search events..."
-                          className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]"
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
+                          className="flex-1 px-4 py-2 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]"
                         />
-                      </div>
-                      <div className="md:w-1/3">
                         <select
-                          className="w-full px-4 py-3 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]"
                           value={selectedCategory}
                           onChange={(e) => setSelectedCategory(e.target.value)}
+                          className="px-4 py-2 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]"
                         >
-                          <option value="All">All Categories</option>
-                          <option value="Conference">Conference</option>
-                          <option value="Workshop">Workshop</option>
-                          <option value="Concert">Concert</option>
-                          <option value="Festival">Festival</option>
-                          <option value="Networking">Networking</option>
+                          <option value="all">All Categories</option>
+                          <option value="CONFERENCE">Conference</option>
+                          <option value="WORKSHOP">Workshop</option>
+                          <option value="SEMINAR">Seminar</option>
+                          <option value="NETWORKING">Networking</option>
+                        </select>
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value)}
+                          className="px-4 py-2 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]"
+                        >
+                          <option value="date-asc">Date (Nearest First)</option>
+                          <option value="date-desc">Date (Furthest First)</option>
+                          <option value="price-asc">Price (Low to High)</option>
+                          <option value="price-desc">Price (High to Low)</option>
                         </select>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Events Grid */}
-                  {filteredEvents.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {filteredEvents.map(event => (
-                        <div key={event.id} className="bg-[#F5EEDC] rounded-lg overflow-hidden shadow-md">
-                          <img 
-                            src={event.image} 
-                            alt={event.title} 
-                            className="w-full h-48 object-cover"
+                    
+                    {filteredEvents.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredEvents.map(event => (
+                          <EventCard
+                            key={event.id}
+                            event={{
+                              id: event.id,
+                              title: event.title,
+                              shortDescription: event.shortDescription,
+                              image: event.imageUrl,
+                              category: event.eventType,
+                              date: event.eventDate,
+                              time: `${event.startTime} - ${event.endTime}`,
+                              location: event.location,
+                              price: event.generalPrice
+                            }}
+                            onClick={() => handleEventClick(event)}
                           />
-                          <div className="p-4">
-                            <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-[#183B4E] text-lg">{event.title}</h3>
-                              <span className="bg-[#27548A]/10 text-[#27548A] text-xs px-2 py-1 rounded-full">
-                                {event.category}
-                              </span>
-                            </div>
-                            <p className="text-sm text-[#183B4E]/70 mb-3">{event.shortDescription}</p>
-                            <div className="flex justify-between items-center">
-                              <div className="text-sm text-[#183B4E]/70">
-                                <div>{new Date(event.date).toLocaleDateString()}</div>
-                                <div>{event.location}</div>
-                              </div>
-                              <button className="bg-[#27548A] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#183B4E]">
-                                Register
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <FaSearch className="mx-auto text-5xl text-[#27548A]/30 mb-4" />
-                      <h3 className="text-xl font-medium text-[#183B4E] mb-2">No events found</h3>
-                      <p className="text-[#183B4E]/70">Try adjusting your search or filters</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-[#183B4E]/70 text-lg">No events found</p>
+                        <p className="text-[#183B4E]/50 mt-2">Try adjusting your search or filter criteria</p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <EventDetailsView event={selectedEvent} isBrowseMode={true} userId={user.id}/>
+                )}
+              </>
+            )}
 
-              {/* Other existing tabs */}
-            </div>
+            {/* Settings View */}
+            {activeTab === 'settings' && <Settings />}
+
+            {/* Notifications View */}
+            {activeTab === 'notifications' && (
+              <div className="space-y-4">
+                <p className="text-gray-500 text-center">No new notifications</p>
+              </div>
+            )}
+
+            {/* Tickets View */}
+            {activeTab === 'tickets' && (
+              <MyTicketsAccordion userId={user.id}/>
+            )}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
 export default AttendeeDashboard;
+
+import RegistrationForm from '../components/RegistrationForm';
+import MyTicketsAccordion from '../components/dashboard/attendee/MyTicketsAccordion';
+const EventDetailsView = ({ event, isBrowseMode = false, userId}) => {
+  const [showRegistration, setShowRegistration] = useState(false);
+  if (showRegistration) {
+    return <RegistrationForm event={event} onBack={() => setShowRegistration(false)} userId={userId}/>;
+  }
+  return (
+  <div>
+    <div className="relative h-[300px] mb-6 rounded-lg overflow-hidden">
+      <img
+        src={event.imageUrl || 'https://www.creativefabrica.com/wp-content/uploads/2022/01/01/event-organizer-letter-eo-logo-design-Graphics-22712239-1.jpg'}
+        alt={event.title}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#183B4E] to-transparent opacity-90" />
+      <div className="absolute bottom-0 left-0 right-0 p-6 text-[#F5EEDC]">
+        <div className="flex justify-between items-center">
+          <span className="bg-[#F5EEDC] text-[#183B4E] px-4 py-1 rounded-full text-sm font-medium">
+            {event.eventType}
+          </span>
+          <span className="bg-gray-700 text-white px-3 py-1 rounded-full text-sm font-medium">
+            {event.status}
+          </span>
+        </div>
+        <h1 className="text-3xl font-bold mt-2">
+          {event.title}
+        </h1>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+      <div className="md:col-span-3">
+        <h2 className="text-xl font-bold text-[#183B4E] mb-4">About This Event</h2>
+        <p className="text-[#183B4E]/80 whitespace-pre-line mb-6">
+          {event.description}
+        </p>
+
+        <h3 className="text-lg font-bold text-[#183B4E] mb-3">Event Details</h3>
+        <div className="bg-[#F5EEDC]/50 p-4 rounded-lg mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center text-[#183B4E]/80">
+              <FaCalendarAlt className="mr-3 text-[#27548A]" />
+              <div>
+                <div className="font-medium">Date</div>
+                <div>{new Date(event.eventDate).toLocaleDateString()}</div>
+              </div>
+            </div>
+            <div className="flex items-center text-[#183B4E]/80">
+              <FaClock className="mr-3 text-[#27548A]" />
+              <div>
+                <div className="font-medium">Time</div>
+                <div>
+                  {`${event.startTime || '00:00'} - ${event.endTime || '00:00'}`}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center text-[#183B4E]/80">
+              <FaMapMarkerAlt className="mr-3 text-[#27548A]" />
+              <div>
+                <div className="font-medium">Location</div>
+                <div>{event.location}</div>
+              </div>
+            </div>
+            <div className="flex items-center text-[#183B4E]/80">
+              <FaInfoCircle className="mr-3 text-[#27548A]" />
+              <div>
+                <div className="font-medium">Status / Updated</div>
+                <div>
+                  {event.status === "IN_PROGRESS" ? "Event STARTED" : "Event Published"}
+                  {event.lastUpdatedAt && (
+                    <span className="text-xs block text-[#183B4E]/60">
+                      (Updated: {new Date(event.lastUpdatedAt).toLocaleString()})
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-[#F5EEDC] p-6 rounded-lg md:col-span-2">
+        <h3 className="text-xl font-bold text-[#183B4E] mb-4">
+          {isBrowseMode ? 'Ticket Information' : 'Your Ticket'}
+        </h3>
+        <div className="space-y-4 mb-6">
+          {/* General Admission Ticket */}
+          <div className="bg-white p-4 rounded-lg">
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="font-bold text-[#183B4E]">General Admission</h4>
+                {isBrowseMode ? (
+                  <p className="text-sm text-[#183B4E]/70">
+                    {event.generalTicketLimit
+                      ? `${event.generalTicketLimit} tickets available`
+                      : 'Limited availability'}
+                  </p>
+                ) : (
+                  <p className="text-sm text-[#183B4E]/70">
+                    Ticket #{event.ticketId || 'N/A'}
+                  </p>
+                )}
+              </div>
+              <div className="text-xl font-bold text-[#183B4E]">
+                ${event.generalPrice?.toFixed(2) ?? '0.00'}
+              </div>
+            </div>
+          </div>
+
+          {/* VIP Ticket - Only show if VIP price exists and in browse mode */}
+          {isBrowseMode && event.vipPrice > 0 && (
+            <div className="bg-white p-4 rounded-lg">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="font-bold text-[#183B4E]">VIP Access</h4>
+                  <p className="text-sm text-[#183B4E]/70">
+                    {event.vipTicketLimit
+                      ? `${event.vipTicketLimit} tickets available`
+                      : 'Limited availability'}
+                  </p>
+                </div>
+                <div className="text-xl font-bold text-[#183B4E]">
+                  ${event.vipPrice.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {isBrowseMode && (
+              <button 
+                className="mt-4 w-full bg-[#27548A] text-white py-2 px-4 rounded-lg hover:bg-[#183B4E] transition-colors"
+                onClick={() => setShowRegistration(true)}
+              >
+                Register Now
+              </button>
+            )}
+      </div>
+      
+    </div>
+    
+  </div>
+  );
+};

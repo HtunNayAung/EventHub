@@ -10,6 +10,7 @@ import BecomeOrganizer from './pages/BecomeOrganizer';
 import OrganizerDashboard from './pages/OrganizerDashboard';
 import AttendeeDashboard from './pages/AttendeeDashboard';
 import './App.css';
+import PaymentPage from './pages/PaymentPage';
 // import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
           <Route path="/signup/organizer" element={<Signup isOrganizer={true} />} />
           <Route path="/organizer/:id/dashboard" element={<OrganizerDashboard />} />
           <Route path="/attendee/:id/dashboard" element={<AttendeeDashboard />} />
+          <Route path="/payment/:registrationId" element={<PaymentPage />} />
           {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
         </Routes>
         <Footer />

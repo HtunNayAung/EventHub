@@ -130,12 +130,14 @@ const OrganizerDashboard = () => {
   const handleEventUpdated = (updatedEvent) => {
     setEvents(prevEvents =>
       prevEvents.map(event =>
-        event.id === updatedEvent.id ? updatedEvent : event
+        event.id === updatedEvent.id ? { ...updatedEvent } : event
       )
     );
     setIsEditing(false);
     setSelectedEvent(updatedEvent);
+    setShowEventDetails(true);
   };
+  
 
   const handleEventClick = event => {
     setSelectedEvent(event);
@@ -305,13 +307,14 @@ const OrganizerDashboard = () => {
               <EventForm 
                 initialData={selectedEvent}
                 isEditing={true}
-                onEventCreated={(updatedEvent) => {
-                  setEvents(prev => 
-                    prev.map(e => e.id === updatedEvent.id ? updatedEvent : e)
-                  );
-                  setIsEditing(false);
-                  setShowEventDetails(false);
-                }}
+                // onEventCreated={(updatedEvent) => {
+                //   setEvents(prev => 
+                //     prev.map(e => e.id === updatedEvent.id ? updatedEvent : e)
+                //   );
+                //   setIsEditing(false);
+                //   setShowEventDetails(false);
+                // }}
+                onEventCreated={handleEventUpdated}
                 onCancel={handleCancelEdit}
               />
             )}
@@ -531,9 +534,9 @@ const OrganizerDashboard = () => {
             )}
 
             {/* Create form view */}
-            {activeTab==='events' && showCreateEvent && !showEventDetails && (
+            {/* {activeTab==='events' && showCreateEvent && !showEventDetails && (
               <EventForm onCancel={()=>setShowCreateEvent(false)} onSuccess={handleEventCreated}/>
-            )}
+            )} */}
 
             {/* List view with sub-tabs */}
             {activeTab==='events' && !showCreateEvent && !showEventDetails && (

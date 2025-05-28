@@ -17,13 +17,16 @@ const BrowseEvents = () => {
   const [sortBy, setSortBy] = useState('date');
   const stompClientRef = useRef(null);
 
-  // Fetch only PUBLISHED events from the API
-  const fetchPublished = async () => {
+  // Fetch PUBLISHED and IN_PROGRESS events
+  const fetchEvents = async () => {
     setLoading(true);
     try {
       const response = await eventService.getAllEvents();
-      const published = (response.data || []).filter(e => e.status === 'PUBLISHED');
-      setEvents(published);
+      console.log('Fetched events:', response.data);
+      const filtered = (response.data || []).filter(
+        e => e.status === 'PUBLISHED' || e.status === 'IN_PROGRESS'
+      );
+      setEvents(filtered);
     } catch (err) {
       console.error('Error fetching events:', err);
       setEvents([]);
@@ -33,34 +36,41 @@ const BrowseEvents = () => {
   };
 
   useEffect(() => {
-    fetchPublished();
+    fetchEvents();
 
     // Setup WebSocket + STOMP
-    const socket = new SockJS('http://localhost:8080/ws'); // backend endpoint
+    const socket = new SockJS('http://localhost:8080/ws');
     const stompClient = Stomp.over(socket);
     stompClient.connect({}, () => {
+      // Subscribe to both status updates and completed events
       stompClient.subscribe('/topic/events/status', msg => {
         const updated = JSON.parse(msg.body);
         setEvents(prev => {
-          // remove any existing with same id
+          // drop any old copy
           const without = prev.filter(e => e.id !== updated.id);
-          // only keep if it's still PUBLISHED
-          return updated.status === 'PUBLISHED'
+          // only re-add if still PUBLISHED or IN_PROGRESS
+          return ['PUBLISHED', 'IN_PROGRESS'].includes(updated.status)
             ? [...without, updated]
             : without;
         });
+      });
+
+      // Add subscription for completed events
+      stompClient.subscribe('/topic/events/completed', msg => {
+        const updated = JSON.parse(msg.body);
+        setEvents(prev => 
+          prev.filter(event => !updated.find(u => u.id === event.id))
+        );
       });
     });
     stompClientRef.current = stompClient;
 
     return () => {
-      if (stompClientRef.current) {
-        stompClientRef.current.disconnect();
-      }
+      stompClientRef.current?.disconnect();
     };
   }, []);
 
-  // Today’s date at midnight
+  // Today's date at midnight
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -96,22 +106,19 @@ const BrowseEvents = () => {
             Browse Events
           </h1>
           <div className="flex flex-col md:flex-row justify-center gap-4 max-w-4xl mx-auto">
-            {/* Search */}
             <div className="md:w-1/2 relative">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#27548A]" />
               <input
                 type="text"
                 placeholder="Search events..."
-                className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853] focus:ring-2 focus:ring-[#DDA853]/20 outline-none text-[#183B4E]"
+                className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853] focus:ring-[#DDA853]/20 outline-none text-[#183B4E]"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
             </div>
-
-            {/* Sort */}
             <div className="relative">
               <select
-                className="appearance-none bg-[#F5EEDC] pl-4 pr-10 py-3 rounded-lg border-2 border-transparent focus:border-[#DDA853] focus:ring-2 focus:ring-[#DDA853]/20 outline-none text-[#183B4E] cursor-pointer"
+                className="appearance-none bg-[#F5EEDC] pl-4 pr-10 py-3 rounded-lg border-2 border-transparent focus:border-[#DDA853] focus:ring-[#DDA853]/20 outline-none text-[#183B4E] cursor-pointer"
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
               >

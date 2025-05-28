@@ -130,7 +130,7 @@ const EventForm = ({ onEventCreated, onCancel, initialData, isEditing }) => {
         startTime: eventForm.startTime,
         endTime: eventForm.endTime,
         eventType: eventForm.category,
-        status: 'PUBLISHED', // Default status
+        status: isEditing && initialData?.status ? initialData.status : 'PUBLISHED',
         generalPrice: parseFloat(eventForm.generalTicketPrice),
         vipPrice: hasVipTickets ? parseFloat(eventForm.vipTicketPrice) : 0,
         generalTicketLimit: parseInt(eventForm.generalTicketCapacity),
@@ -274,6 +274,7 @@ const EventForm = ({ onEventCreated, onCancel, initialData, isEditing }) => {
                 type="time"
                 name="startTime"
                 required
+                disabled={initialData?.status === 'IN_PROGRESS'}
                 className="w-full pl-10 pr-4 py-3 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]"
                 value={eventForm.startTime}
                 onChange={handleEventFormChange}
