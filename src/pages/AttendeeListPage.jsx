@@ -187,7 +187,9 @@ export default function AttendeeListPage() {
               ) : filteredAttendees.length === 0 ? (
                 <tr><td colSpan="6" className="text-center py-6 text-gray-500 italic">No matching attendees found.</td></tr>
               ) : (
-                filteredAttendees.map(a => (
+                filteredAttendees.map(a => 
+                  (
+                  
                   <tr key={a.registrationId} className="hover:bg-gray-50">
                     <td className="px-6 py-4">{a.registrationId}</td>
                     <td className="px-6 py-4">{a.fullName}</td>
@@ -226,7 +228,7 @@ export default function AttendeeListPage() {
                         </div>
                       )}
 
-                      {a.registrationStatus === 'PAID' && a.amountDue != 0 ? (
+                      {a.registrationStatus === 'PAID' && a.amountDue != 0 && (
                         <button
                           onClick={() => handleRefund(a.registrationId)}
                           disabled={processingId === a.registrationId}
@@ -234,8 +236,14 @@ export default function AttendeeListPage() {
                         >
                           Refund
                         </button>
-                      ) : <span className="text-gray-400 text-sm italic">—</span>}
+                      )}
 
+                      { a.registrationStatus === 'PAID' && a.amountDue == 0 && (
+                         <span className="text-gray-400 text-sm italic">—</span>
+
+                      )}
+                     
+                    
                       {a.registrationStatus === 'REFUND_REQUESTED' && (
                         <div className="flex gap-2">
                         <button

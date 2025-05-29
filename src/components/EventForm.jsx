@@ -13,6 +13,9 @@ const EventForm = ({ onEventCreated, onCancel, initialData, isEditing }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [hasVipTickets, setHasVipTickets] = useState(initialData?.vipTicketLimit > 0 || false);
+  const [remainingGeneral, setRemainingGeneral] = useState(initialData?.generalTicketsRemaining || '');
+  const [remainingVip, setRemainingVip] = useState(initialData?.vipTicketsRemaining || '');
+
 
   // Event form state - initialize with initialData if provided
   const [eventForm, setEventForm] = useState({
@@ -27,9 +30,12 @@ const EventForm = ({ onEventCreated, onCancel, initialData, isEditing }) => {
     vipTicketPrice: initialData?.vipPrice?.toString() || '', 
     generalTicketCapacity: initialData?.generalTicketLimit?.toString() || '',
     vipTicketCapacity: initialData?.vipTicketLimit?.toString() || '', 
+    generalTicketsRemaining: initialData?.generalTicketsRemaining?.toString() || '',
+    vipTicketsRemaining: initialData?.vipTicketsRemaining?.toString() || '',
     category: initialData?.eventType || '',
     imageUrl: initialData?.imageUrl || ''
   });
+  
 
   // Get today's date in YYYY-MM-DD format for the min attribute
   const getTodayDate = () => {
@@ -121,23 +127,48 @@ const EventForm = ({ onEventCreated, onCancel, initialData, isEditing }) => {
 
     try {
       // Format the data for the API
-      const eventData = {
-        title: eventForm.title,
-        description: eventForm.description,
-        shortDescription: eventForm.shortDescription,
-        location: eventForm.location,
-        eventDate: `${eventForm.date}T00:00:00`,
-        startTime: eventForm.startTime,
-        endTime: eventForm.endTime,
-        eventType: eventForm.category,
-        status: isEditing && initialData?.status ? initialData.status : 'PUBLISHED',
-        generalPrice: parseFloat(eventForm.generalTicketPrice),
-        vipPrice: hasVipTickets ? parseFloat(eventForm.vipTicketPrice) : 0,
-        generalTicketLimit: parseInt(eventForm.generalTicketCapacity),
-        vipTicketLimit: hasVipTickets ? parseInt(eventForm.vipTicketCapacity) : 0,
-        imageUrl: eventForm.imageUrl || "https://www.creativefabrica.com/wp-content/uploads/2022/01/01/event-organizer-letter-eo-logo-design-Graphics-22712239-1.jpg",
-        organizerId: localStorage.getItem('userId')
-      };
+      const isFreeEvent = parseFloat(eventForm.generalTicketPrice) === 0;
+
+      const eventData = isEditing
+        ? {
+            // Use EventEditDTO structure
+            title: eventForm.title,
+            shortDescription: eventForm.shortDescription,
+            description: eventForm.description,
+            location: eventForm.location,
+            eventDate: eventForm.date,
+            startTime: eventForm.startTime,
+            endTime: eventForm.endTime,
+            eventType: eventForm.category,
+            imageUrl: eventForm.imageUrl || "https://www.creativefabrica.com/wp-content/uploads/2022/01/01/event-organizer-letter-eo-logo-design-Graphics-22712239-1.jpg",
+            generalPrice: parseFloat(eventForm.generalTicketPrice),
+            vipPrice: hasVipTickets ? parseFloat(eventForm.vipTicketPrice) : 0,
+            generalTicketLimit: parseInt(eventForm.generalTicketCapacity),
+            vipTicketLimit: hasVipTickets ? parseInt(eventForm.vipTicketCapacity) : 0,
+            generalTicketsRemaining: parseInt(eventForm.generalTicketsRemaining),
+            vipTicketsRemaining: hasVipTickets
+              ? (parseInt(eventForm.vipTicketsRemaining))
+              : 0
+          }
+        : {
+            // Use EventCreationDTO structure
+            title: eventForm.title,
+            shortDescription: eventForm.shortDescription,
+            description: eventForm.description,
+            location: eventForm.location,
+            eventDate: eventForm.date,
+            startTime: eventForm.startTime,
+            endTime: eventForm.endTime,
+            eventType: eventForm.category,
+            status: 'PUBLISHED',
+            imageUrl: eventForm.imageUrl || "https://www.creativefabrica.com/wp-content/uploads/2022/01/01/event-organizer-letter-eo-logo-design-Graphics-22712239-1.jpg",
+            generalPrice: parseFloat(eventForm.generalTicketPrice),
+            vipPrice: hasVipTickets ? parseFloat(eventForm.vipTicketPrice) : 0,
+            generalTicketLimit: parseInt(eventForm.generalTicketCapacity),
+            vipTicketLimit: hasVipTickets ? parseInt(eventForm.vipTicketCapacity) : 0,
+            organizerId: localStorage.getItem('userId')
+          };
+
 
       console.log('Sending event data:', eventData);
 
@@ -399,6 +430,47 @@ const EventForm = ({ onEventCreated, onCancel, initialData, isEditing }) => {
             </div>
           </div>
         )}
+
+        {isEditing && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#183B4E] mb-2">Remaining General Tickets</label>
+              <input
+                type="number"
+                min="0"
+                className="w-full px-4 py-3 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]"
+                value={remainingGeneral}
+                onChange={(e) => {
+                  setRemainingGeneral(e.target.value);
+                  setEventForm(prev => ({
+                    ...prev,
+                    generalTicketsRemaining: e.target.value
+                  }));
+                }}
+              />
+            </div>
+            {hasVipTickets && (
+              <div>
+                <label className="block text-sm font-medium text-[#183B4E] mb-2">Remaining VIP Tickets</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="w-full px-4 py-3 rounded-lg bg-[#F5EEDC] border-2 border-transparent focus:border-[#DDA853]"
+                  value={remainingVip}
+                  onChange={(e) => {
+                    setRemainingVip(e.target.value);
+                    setEventForm(prev => ({
+                      ...prev,
+                      vipTicketsRemaining: e.target.value
+                    }));
+                  }}
+                  
+                />
+              </div>
+            )}
+          </div>
+        )}
+
 
         {/* Category */}
         <div>
