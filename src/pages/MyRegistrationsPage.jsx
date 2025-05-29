@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registrationService } from '../services/api';
+import { paymentService, registrationService } from '../services/api';
 
 export default function MyRegistrationsPage() {
   const navigate = useNavigate();
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [visibleTicketId, setVisibleTicketId] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('ALL'); // ✅ new
+  const [statusFilter, setStatusFilter] = useState('ALL'); 
+  const [refundRequested, setRefundRequested] = useState(false); 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,11 +29,34 @@ export default function MyRegistrationsPage() {
     fetchData();
   }, []);
 
+  const handleRequestRefund = async (registrationId) => {
+    const confirmed = window.confirm('Are you sure you want to request a refund? This action cannot be undone.');
+    if (!confirmed) return;
+  
+    try {
+      await paymentService.requestRefund(registrationId); 
+  
+      // Update UI: mark registration as REQUESTED or trigger re-fetch
+      setRegistrations((prev) =>
+        prev.map((reg) =>
+          reg.registrationId === registrationId
+            ? { ...reg, status: 'REFUND_REQUESTED' }
+            : reg
+        )
+      );
+
+      setRefundRequested(true); 
+    } catch (err) {
+      console.error('Refund request failed:', err);
+      alert('Failed to request refund. Please try again later.');
+    }
+  };
+  
+
   const statusStyles = {
     PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-300',
     APPROVED: 'bg-blue-100 text-blue-800 border-blue-300',
     PAID: 'bg-teal-100 text-teal-800 border-teal-300',
-    CONFIRMED: 'bg-green-100 text-green-800 border-green-300',
     REJECTED: 'bg-red-100 text-red-700 border-red-300',
     REFUNDED: 'bg-purple-100 text-purple-800 border-purple-300',
   };
@@ -64,9 +88,9 @@ export default function MyRegistrationsPage() {
           <option value="PENDING">Pending</option>
           <option value="APPROVED">Approved</option>
           <option value="PAID">Paid</option>
-          <option value="CONFIRMED">Confirmed</option>
           <option value="REJECTED">Rejected</option>
           <option value="REFUNDED">Refunded</option>
+          <option value="REFUND_REQUESTED">Refund Req</option>
         </select>
       </div>
 
@@ -90,6 +114,11 @@ export default function MyRegistrationsPage() {
                   Ticket Code: {reg.ticketCode}
                 </div>
               )}
+              {reg.status === 'REFUNDED' && reg.cardLastFour && (
+                <div className="mt-2 text-sm text-purple-700 border border-purple-300 rounded px-3 py-2 bg-purple-50">
+                    Refund has been processed to the card ending with <strong>{reg.cardLastFour}</strong>.
+                </div>
+               )}
             </div>
 
             <div className="flex flex-col items-end gap-2">
@@ -125,9 +154,12 @@ export default function MyRegistrationsPage() {
                 </button>
               )}
 
-              {reg.status === 'PAID' && (
-                <button className="px-4 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
-                  Request Refund
+              {reg.status === 'PAID' && reg.amountDue != 0 && (
+                <button className="px-4 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                disabled={refundRequested}
+                onClick={() => handleRequestRefund(reg.registrationId)}
+                >
+                  {refundRequested ? "Refund Requested" : "Request Refund"}
                 </button>
               )}
             </div>

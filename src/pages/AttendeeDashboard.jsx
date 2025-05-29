@@ -281,7 +281,11 @@ const AttendeeDashboard = () => {
                           <option value="CONFERENCE">Conference</option>
                           <option value="WORKSHOP">Workshop</option>
                           <option value="SEMINAR">Seminar</option>
-                          <option value="NETWORKING">Networking</option>
+                          <option value="CONCERT">Concert</option>
+                          <option value="MOVIE">Movie</option>
+                          <option value="SPORTS">Sports</option>
+                          <option value="SOCIAL">Social</option>
+                          <option value="OTHER">Other</option>
                         </select>
                         <select
                           value={sortBy}

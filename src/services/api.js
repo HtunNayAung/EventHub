@@ -83,6 +83,19 @@ export const paymentService = {
   makePayment: (paymentData) => {
     return api.post('/payments/make', paymentData);
   },
+  requestRefund: (registrationId) =>
+    api.post(`/payments/${registrationId}/request-refund`, {
+      reason: 'User requested refund'
+    }),
+  approveRefund: (registrationId) =>
+    api.put(`/payments/${registrationId}/approve-refund`),
+  rejectRefund: (registrationId) =>
+    api.put(`/payments/${registrationId}/reject-refund`),
+  refundRegistration: (registrationId) =>
+    api.post(`/payments/${registrationId}/refund`,  {
+      reason: 'Organizer refunded the registration'
+    }),
+  
 };
 
 export default api;

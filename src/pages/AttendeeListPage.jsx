@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { eventService, registrationService } from '../services/api';
+import { eventService, registrationService, paymentService } from '../services/api';
 
 export default function AttendeeListPage() {
   const { eventId } = useParams();
@@ -54,7 +54,7 @@ export default function AttendeeListPage() {
   const handleReject = async (registrationId) => {
     setProcessingId(registrationId);
     try {
-      const res = await registrationService.rejectRegistration(registrationId);
+      await registrationService.rejectRegistration(registrationId);
       setAttendees(prev => prev.map(a =>
         a.registrationId === registrationId
           ? { ...a, registrationStatus: 'REJECTED' }
@@ -72,7 +72,7 @@ export default function AttendeeListPage() {
     if (!window.confirm('Refund this registration?')) return;
     setProcessingId(registrationId);
     try {
-      await eventService.refundRegistration(registrationId);
+      await paymentService.refundRegistration(registrationId);
       setAttendees(prev => prev.map(a =>
         a.registrationId === registrationId
           ? { ...a, registrationStatus: 'REFUNDED' }
@@ -80,6 +80,42 @@ export default function AttendeeListPage() {
       ));
     } catch (err) {
       alert('Refund failed. Try again.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleApproveRefund = async (registrationId) => {
+    setProcessingId(registrationId);
+    try {
+      await paymentService.approveRefund(registrationId);
+      setAttendees(prev => prev.map(a =>
+        a.registrationId === registrationId
+          ? { ...a, registrationStatus: 'REFUNDED' }
+          : a
+      ));
+      // Optionally refresh the data or update state
+    } catch (error) {
+      console.error('Error approving refund:', error);
+      alert('Failed to approve refund.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+  
+  const handleRejectRefund = async (registrationId) => {
+    setProcessingId(registrationId);
+    try {
+      await paymentService.rejectRefund(registrationId);
+      setAttendees(prev => prev.map(a =>
+        a.registrationId === registrationId
+          ? { ...a, registrationStatus: 'PAID' }
+          : a
+      ));
+      // Optionally refresh the data or update state
+    } catch (error) {
+      console.error('Error rejecting refund:', error);
+      alert('Failed to reject refund.');
     } finally {
       setProcessingId(null);
     }
@@ -190,7 +226,7 @@ export default function AttendeeListPage() {
                         </div>
                       )}
 
-                      {a.registrationStatus === 'PAID' && (
+                      {a.registrationStatus === 'PAID' && a.amountDue != 0 ? (
                         <button
                           onClick={() => handleRefund(a.registrationId)}
                           disabled={processingId === a.registrationId}
@@ -198,6 +234,25 @@ export default function AttendeeListPage() {
                         >
                           Refund
                         </button>
+                      ) : <span className="text-gray-400 text-sm italic">—</span>}
+
+                      {a.registrationStatus === 'REFUND_REQUESTED' && (
+                        <div className="flex gap-2">
+                        <button
+                          onClick={() => handleApproveRefund(a.registrationId)}
+                          disabled={processingId === a.registrationId}
+                          className="px-3 py-1.5 bg-green-600 text-white rounded-md text-xs hover:bg-green-700"
+                        >
+                          Approve Refund
+                        </button>
+                        <button
+                          onClick={() => handleRejectRefund(a.registrationId)}
+                          disabled={processingId === a.registrationId}
+                          className="px-3 py-1.5 bg-red-600 text-white rounded-md text-xs hover:bg-red-700"
+                        >
+                          Reject Refund
+                        </button>
+                      </div>
                       )}
 
                       {['APPROVED', 'REJECTED', 'REFUNDED'].includes(a.registrationStatus) && (
