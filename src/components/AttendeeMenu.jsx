@@ -12,7 +12,8 @@ const AttendeeMenu = ({
   activeTab, 
   setActiveTab, 
   user: initialUser, 
-  handleLogout 
+  handleLogout,
+  unreadCount
 }) => {
   const [user, setUser] = useState(initialUser);
 
@@ -68,13 +69,25 @@ const AttendeeMenu = ({
           <span>My Registrations</span>
         </button>
         
-        <button 
+        <button
           onClick={() => setActiveTab('notifications')}
-          className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${activeTab === 'notifications' ? 'bg-[#DDA853] text-[#183B4E]' : 'hover:bg-white/10'}`}
+          className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors relative ${
+            activeTab === 'notifications' ? 'bg-[#DDA853] text-[#183B4E]' : 'hover:bg-white/10'
+          }`}
         >
-          <FaBell className="mr-3" />
-          <span>Notifications</span>
+          <div className="relative flex items-center">
+            <FaBell className="mr-2" />
+            <span>Notifications</span>
+            
+            {unreadCount > 0 && (
+              <span className="absolute -right-10 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
+                {unreadCount}
+              </span>
+            )}
+          </div>
         </button>
+
+
         
         <button 
           onClick={() => setActiveTab('settings')}

@@ -98,4 +98,12 @@ export const paymentService = {
   
 };
 
+export const notificationService = {
+  sendReminders: (eventId) =>
+    api.post(`/notifications/events/${eventId}/send-reminders`),
+  getNotis: (userId) =>
+    api.get(`/notifications/users/${userId}`),
+  markAsRead: (id) => api.put(`/notifications/${id}/read`)
+}
+
 export default api;

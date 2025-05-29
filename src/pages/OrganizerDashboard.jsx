@@ -13,7 +13,7 @@ import {
 import EventForm from '../components/EventForm';
 import OrganizerMenu from '../components/OrganizerMenu';
 import EventCard from '../components/EventCard';
-import { eventService } from '../services/api';
+import { eventService, notificationService } from '../services/api';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import Settings from '../components/Settings';
@@ -200,6 +200,17 @@ const OrganizerDashboard = () => {
     setCancelError('');
     setCancelPassword('');
     setIsCancelling(false); // Ensure cancelling state is reset
+  };
+
+  const sendReminders = async (eventId) => {
+  
+    try {
+      const res = await notificationService.sendReminders(eventId);
+      alert('Reminders sent successfully!');
+    } catch (err) {
+      console.error('Failed to send reminders:', err);
+      alert('Failed to send reminders.');
+    }
   };
 
   // Compute filtered lists
@@ -515,6 +526,15 @@ const OrganizerDashboard = () => {
                               Event Cancelled
                             </div>
                           )}
+
+                          {isEditableOrCancellable && (
+                            <button
+                              onClick={() => sendReminders(selectedEvent.id)}
+                              className="w-full mt-3 bg-[#0E7C86] text-white py-2 rounded-lg font-medium hover:bg-[#09646B] transition-colors"
+                            >
+                              Send Reminders
+                            </button>
+                          )}
                         </>
                       );
                     })()}
@@ -522,11 +542,6 @@ const OrganizerDashboard = () => {
                 </div>
               </div>
             )}
-
-            {/* Create form view */}
-            {/* {activeTab==='events' && showCreateEvent && !showEventDetails && (
-              <EventForm onCancel={()=>setShowCreateEvent(false)} onSuccess={handleEventCreated}/>
-            )} */}
 
             {/* List view with sub-tabs */}
             {activeTab==='events' && !showCreateEvent && !showEventDetails && (
@@ -598,9 +613,22 @@ const EventGrid = ({ events, onClick }) => (
                 onClick={() => onClick(evt)}
             />
             
-            <span className="absolute top-0 right-0 m-2 bg-green-700 text-white px-3 py-1 rounded-full text-xs font-medium">
-                {evt.status}
-                </span>
+            <span
+              className={`absolute top-0 right-0 m-2 px-3 py-1 rounded-full text-xs font-medium text-white ${
+                evt.status === 'PUBLISHED'
+                  ? 'bg-blue-600'
+                  : evt.status === 'IN_PROGRESS'
+                  ? 'bg-orange-500'
+                  : evt.status === 'COMPLETED'
+                  ? 'bg-green-600'
+                  : evt.status === 'CANCELLED'
+                  ? 'bg-red-600'
+                  : 'bg-gray-400'
+              }`}
+            >
+              {evt.status}
+            </span>
+
             <div className="absolute inset-0 bg-gray-500 opacity-10 rounded-lg pointer-events-none" />
         </div>
       ))}

@@ -91,6 +91,8 @@ export default function MyRegistrationsPage() {
           <option value="REJECTED">Rejected</option>
           <option value="REFUNDED">Refunded</option>
           <option value="REFUND_REQUESTED">Refund Req</option>
+          <option value="CANCELLED">Cancelled</option>
+
         </select>
       </div>
 

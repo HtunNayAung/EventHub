@@ -15,6 +15,8 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import Settings from '../components/Settings';
 import MyRegistrationsPage from './MyRegistrationsPage';
+import NotificationTab from '../components/NotificationTab';
+import { notificationService } from '../services/api';
 
 const AttendeeDashboard = () => {
   const navigate = useNavigate();
@@ -25,14 +27,52 @@ const AttendeeDashboard = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Add these new state variables
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [allEvents, setAllEvents] = useState([]);
-  const [sortBy, setSortBy] = useState('date-asc'); // Add this state
+  const [sortBy, setSortBy] = useState('date-asc'); 
+  const [unreadCount, setUnreadCount] = useState(0);
+  const user = {
+    id: localStorage.getItem('userId') || 'undefined',
+    name: localStorage.getItem('userName') || 'Attendee Name',
+    email: localStorage.getItem('userEmail') || 'attendee@example.com'
+  };
 
-  // Add this new effect for fetching all events
+  useEffect(() => {
+    const client = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+      reconnectDelay: 5000,
+      debug: (str) => console.log('[WebSocket]', str)
+    });
+  
+    client.onConnect = () => {
+      client.subscribe(`/topic/notifications/${user.id}`, msg => {
+        setUnreadCount(prev => prev + 1);
+      });
+    };
+  
+    client.activate();
+  
+    return () => {
+      client.deactivate();
+    };
+  }, [user.id]);
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const res = await notificationService.getNotis(user.id);
+        const unread = res.data.filter(n => !n.read).length;
+        setUnreadCount(unread);
+      } catch (err) {
+        console.error('Failed to fetch unread count:', err);
+      }
+    };
+  
+    fetchUnreadCount();
+  }, [user.id]);
+  
+
   useEffect(() => {
     if (activeTab === 'browse') {
       fetchAllEvents();
@@ -75,11 +115,7 @@ const AttendeeDashboard = () => {
     }
   });
 
-  const user = {
-    id: localStorage.getItem('userId') || 'undefined',
-    name: localStorage.getItem('userName') || 'Attendee Name',
-    email: localStorage.getItem('userEmail') || 'attendee@example.com'
-  };
+  
   // useEffect(() => {
   //   // only wire up WebSocket when showing the events list
   //   if (activeTab === 'events' && !showEventDetails) {
@@ -226,6 +262,7 @@ const AttendeeDashboard = () => {
           setActiveTab={setActiveTab}
           user={user}
           handleLogout={handleLogout}
+          unreadCount={unreadCount}
         />
       </div>
 
@@ -337,11 +374,8 @@ const AttendeeDashboard = () => {
             {activeTab === 'settings' && <Settings />}
 
             {/* Notifications View */}
-            {activeTab === 'notifications' && (
-              <div className="space-y-4">
-                <p className="text-gray-500 text-center">No new notifications</p>
-              </div>
-            )}
+            {activeTab === 'notifications' && <NotificationTab userId={user.id} setUnreadCount={setUnreadCount}/>}
+
 
             {/* Tickets View */}
             {activeTab === 'registrations' && (
