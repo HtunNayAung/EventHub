@@ -25,11 +25,7 @@ const Navbar = ({ inDashboard = false }) => {
             onClick={() => navigate('/')} 
             className="text-2xl font-bold text-[#F5EEDC] select-none cursor-pointer flex items-center"
           >
-            <img 
-              src="/EventHub_logo_white.png" 
-              alt="EventHub Logo" 
-              className="h-10"
-            />
+            <h1 className="text-2xl font-bold text-white select-none">EventHub</h1>
           </div>
           
           {inDashboard ? (
