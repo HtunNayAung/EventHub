@@ -17,6 +17,7 @@ import { eventService, notificationService } from '../services/api';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import Settings from '../components/Settings';
+import AnalyticsTab from '../components/AnalyticsTab';
 
 const OrganizerDashboard = () => {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ const OrganizerDashboard = () => {
   const [eventsSubTab, setEventsSubTab] = useState('upcoming'); // 'upcoming', 'inprogress', 'completed', 'cancelled'
 
   const user = {
+    id: localStorage.getItem('userId'),
     name: localStorage.getItem('userName') || 'Organizer Name',
     email: localStorage.getItem('userEmail') || 'organizer@example.com'
   };
@@ -267,7 +269,7 @@ const OrganizerDashboard = () => {
             {!showCreateEvent && !showEventDetails ? (
               <>
                 <h1 className="text-2xl md:text-3xl font-bold text-[#183B4E]">
-                  {activeTab === 'settings' ? 'Settings' : 'My Events'}
+                  {activeTab === 'settings' ? 'Settings' : activeTab === 'analytics'? 'Insights for you' : 'My Events'}
                 </h1>
                 {activeTab === 'events' && (
                   <button
@@ -319,8 +321,7 @@ const OrganizerDashboard = () => {
               />
             )}
 
-            {/* Settings View */}
-            {activeTab === 'settings' && <Settings />}
+            
 
             {/* Details view */}
             {activeTab === 'events' && showEventDetails && selectedEvent && !isEditing && (
@@ -535,6 +536,7 @@ const OrganizerDashboard = () => {
                               Send Reminders
                             </button>
                           )}
+                          
                         </>
                       );
                     })()}
@@ -579,8 +581,11 @@ const OrganizerDashboard = () => {
               </>
             )}
 
-            {/* Placeholder for other tabs (attendees, analytics, settings) */}
+            {/* Settings View */}
+            {activeTab === 'settings' && <Settings />}
 
+            {/* Analytics View */}
+            {activeTab === 'analytics' && <AnalyticsTab organizerId={user.id}/>}
           </div>
         </div>
       </div>

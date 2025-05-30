@@ -45,6 +45,9 @@ export const eventService = {
   getAttendees: (eventId) => {
     return api.get(`/registrations/events/${eventId}`);
   },
+  getEventByKeyword: (keyword) => {
+    return api.get(`/events/search?keyword=${keyword}`);
+  },
 
 };
 
@@ -104,6 +107,17 @@ export const notificationService = {
   getNotis: (userId) =>
     api.get(`/notifications/users/${userId}`),
   markAsRead: (id) => api.put(`/notifications/${id}/read`)
+}
+
+export const analyticsService = {
+  getOverview: (organizerId) => 
+    api.get(`/analytics/organizers/${organizerId}/overview`),
+  getSales: (organizerId) => 
+    api.get(`/analytics/organizers/${organizerId}/sales`),
+  getEventOverview: (eventId) => 
+    api.get(`/analytics/events/${eventId}/overview`),
+  getEventSales: (eventId) => 
+    api.get(`/analytics/events/${eventId}/sales`),
 }
 
 export default api;
